@@ -1,6 +1,5 @@
 import requests
-import util
-
+from challenge import util
 
 RDAP_URL = 'https://rdap.arin.net/registry/ip/{0}'
 
@@ -21,7 +20,7 @@ def get(ip, process=True):
 
     result = response.json()
     if process:
-        result = process_data(result)
+        result = _process_data(result)
 
     return result
 
@@ -41,7 +40,7 @@ def get_all(ips, process=True):
     return data
 
 
-def process_data(data):
+def _process_data(data):
     """
     Process RDAP data.
     Returns an array where one item is for top-level RDAP data, and items for each child entity.
@@ -58,7 +57,7 @@ def process_data(data):
             top_level_data[field] = data[field]
 
     if 'events' in data:
-        top_level_data.update(parse_events(data['events']))
+        top_level_data.update(_parse_events(data['events']))
 
     if 'status' in data:
         top_level_data['status'] = ','.join(data['status'])
@@ -68,12 +67,12 @@ def process_data(data):
     if 'entities' in data:
         entities = filter(lambda e: e['objectClassName'] == 'entity', data['entities'])
         for entity in entities:
-            all_data += parse_entity(entity, top_level_data['handle'])
+            all_data += _parse_entity(entity, top_level_data['handle'])
 
     return all_data
 
 
-def parse_events(events):
+def _parse_events(events):
     """
     Parse RDAP events.
     :param events:
@@ -93,7 +92,7 @@ def parse_events(events):
     return parsed_events
 
 
-def parse_entity(entity, parent):
+def _parse_entity(entity, parent):
     """
     Parse RDAP entities.
     An entity can have child entities, therefore this function returns an array; one item for the top-level entity
@@ -109,24 +108,24 @@ def parse_entity(entity, parent):
 
     if 'vcardArray' in entity:
         vcard_items = entity['vcardArray'][1]
-        top_level_entity.update(parse_vcard(vcard_items))
+        top_level_entity.update(_parse_vcard(vcard_items))
 
     if 'roles' in entity:
         top_level_entity['roles'] = ','.join(entity['roles'])
 
     if 'events' in entity:
-        top_level_entity.update(parse_events(entity['events']))
+        top_level_entity.update(_parse_events(entity['events']))
 
     entities = [top_level_entity]
 
     if 'entities' in entity:
         for entity in entity['entities']:
-            entities += parse_entity(entity, top_level_entity['handle'])
+            entities += _parse_entity(entity, top_level_entity['handle'])
 
     return entities
 
 
-def parse_vcard(vcard):
+def _parse_vcard(vcard):
     """
     Parse a vCard from an RDAP entity.
     :param vcard:
@@ -152,3 +151,7 @@ def parse_vcard(vcard):
         parsed_vcard[key] = value
 
     return parsed_vcard
+
+
+def get_key(data):
+    return data['handle']

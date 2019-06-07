@@ -1,0 +1,4 @@
+venv/
+challenge/__pycache__/
+.idea/
+data/

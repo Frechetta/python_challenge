@@ -1,4 +1,4 @@
-import util
+from challenge import util
 
 
 def read_ips(path):

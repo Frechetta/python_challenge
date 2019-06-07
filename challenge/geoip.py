@@ -1,7 +1,6 @@
 import requests
 from copy import deepcopy
-import util
-
+from challenge import util
 
 GEO_IP_URL = 'http://api.ipstack.com/{0}?access_key=5635018d1ae4fe81a3e4ed450ed62bfe'
 
@@ -19,7 +18,7 @@ def get(ip, process=True):
 
     data = response.json()
     if process:
-        data = process_data(data)
+        data = _process_data(data)
 
     return data
 
@@ -39,7 +38,7 @@ def get_all(ips, process=True):
     return data
 
 
-def process_data(data):
+def _process_data(data):
     """
     Process GeoIP data.
     :param data: the data to process
@@ -49,5 +48,12 @@ def process_data(data):
         raise Exception('Value is not a dict. Type: {0}'.format(type(data)))
 
     new_data = deepcopy(data)
-    del new_data['location']
+
+    if 'location' in new_data:
+        del new_data['location']
+
     return new_data
+
+
+def get_key(data):
+    return data['ip']
