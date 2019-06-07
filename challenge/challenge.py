@@ -1,10 +1,24 @@
 import sys
+import argparse
 from challenge import geoip, rdap, reader, warehouse
 
 
 def main(args):
-    path = args[0]
+    args = parse_args(args)
 
+    if args.path is not None:
+        read_data(args.path)
+
+    input_loop()
+
+
+def parse_args(args):
+    parser = argparse.ArgumentParser(description='Process IPs from a text file and/or query IP data')
+    parser.add_argument('path', nargs='?', default=None)
+    return parser.parse_args(args)
+
+
+def read_data(path):
     print('\nReading IPs from file...')
     ips = reader.read_ips(path)
     print('Done.')
@@ -41,6 +55,10 @@ def main(args):
 
     print('RDAP:')
     print('added: {0}, skipped: {1}'.format(added_rdap_rows, skipped_rdap_rows))
+
+
+def input_loop():
+    print('input loop')
 
 
 if __name__ == '__main__':
