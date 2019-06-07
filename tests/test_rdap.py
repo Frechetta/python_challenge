@@ -59,27 +59,6 @@ class TestGet(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
-class TestGetAll(unittest.TestCase):
-    def test_none_ips(self):
-        with self.assertRaises(TypeError):
-            rdap.get_all(None)
-
-    def test_no_ips(self):
-        expected = []
-        actual = rdap.get_all([])
-
-        self.assertEqual(expected, actual)
-
-    @patch('challenge.rdap.get')
-    def test(self, mock_get):
-        mock_get.side_effect = [['arr1', 1], ['arr2', 2], ['arr3', 3]]
-
-        expected = ['arr1', 1, 'arr2', 2, 'arr3', 3]
-        actual = rdap.get_all(['derp', 'herp', 'lerp'])
-
-        self.assertEqual(expected, actual)
-
-
 class TestProcessData(unittest.TestCase):
     def test_not_dict(self):
         with self.assertRaises(Exception):

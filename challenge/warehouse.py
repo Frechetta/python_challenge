@@ -8,8 +8,9 @@ import sys
 class Warehouse:
     def __init__(self, path='data'):
         self.path = Path(path)
-        self.data = []
         self.keys = {}
+        self.open_files = {}
+        self.open = False
 
         self.init()
 
@@ -31,51 +32,58 @@ class Warehouse:
                     event = json.loads(line)
 
                     key = key_func(event)
-                    if key not in self.keys:
-                        self.data.append(event)
-
                     self.keys[index].add(key)
 
+    def __enter__(self):
+        files = self.path.glob('*')
+        for file_path in files:
+            index = str(file_path.name).replace('.json', '')
+            self.open_files[index] = file_path.open('a')
+
+        self.open = True
+
+        return self
+
+    def __exit__(self, t, val, tb):
+        for file in self.open_files.values():
+            file.close()
+
+        self.open = False
+
+        if tb is not None:
+            return False
+
+        return True
+
     def write(self, index, data):
-        if not isinstance(data, dict) and not isinstance(data, list):
-            raise Exception('data object is not a dict or list')
+        if not self.open:
+            raise Exception('Not within context of a warehouse!')
+
+        if not isinstance(data, dict):
+            raise Exception('Data object is not a dict. Type: {0}'.format(type(data)))
 
         self.path.mkdir(exist_ok=True)
 
-        index_path = self.path / (index + '.json')
+        if index not in self.open_files:
+            file_path = self.path / (index + '.json')
+            self.open_files[index] = file_path.open('a')
+
+        file = self.open_files[index]
 
         key_func = util.get_key_func(index)
 
         if index not in self.keys:
             self.keys[index] = set()
 
-        added_events = 0
-        skipped_events = 0
+        key = key_func(data)
 
-        with index_path.open('a') as file:
-            if isinstance(data, dict):
-                key = key_func(data)
+        if key not in self.keys[index]:
+            data['index'] = index
+            self.keys[index].add(key)
+            file.write(json.dumps(data) + '\n')
+            return True
 
-                if key not in self.keys[index]:
-                    data['index'] = index
-                    self.data.append(data)
-
-                    file.write(json.dumps(data) + '\n')
-                    added_events += 1
-                else:
-                    skipped_events += 1
-            else:
-                for line in data:
-                    key = key_func(line)
-                    if key not in self.keys[index]:
-                        line['index'] = index
-                        self.data.append(line)
-                        file.write(json.dumps(line) + '\n')
-                        added_events += 1
-                    else:
-                        skipped_events += 1
-
-        print('added: {0}, skipped: {1}'.format(added_events, skipped_events))
+        return False
 
     def query(self, query_str):
         quote_positions = [m.start() for m in re.finditer('"', query_str)]
@@ -116,34 +124,36 @@ class Warehouse:
         print(field_filters)
         print(text_filters)
 
-        for event in self.data:
-            keep = True
+        files = self.path.glob('*')
+        for file_path in files:
+            with file_path.open() as file:
+                for line in file:
+                    event = json.loads(line)
+                    if self.filter_event(event, line, field_filters, text_filters):
+                        yield event
 
-            for field_filter in field_filters:
-                parts = field_filter.split('=')
-                field = parts[0]
-                value = parts[1]
+    @staticmethod
+    def filter_event(event, raw_event, field_filters, text_filters):
+        for field_filter in field_filters:
+            parts = field_filter.split('=')
+            field = parts[0]
+            value = parts[1]
 
-                if field not in event or str(event[field]).lower() != value.lower():
-                    keep = False
-                    break
+            if field not in event or (value != '*' and str(event[field]).lower() != value.lower()):
+                return False
 
-            if not keep:
-                continue
+        for text_filter in text_filters:
+            if raw_event.find(text_filter) < 0:
+                return False
 
-            for text_filter in text_filters:
-                if json.dumps(event).find(text_filter) < 0:
-                    keep = False
-                    break
-
-            if keep:
-                yield event
+        return True
 
 
-query = sys.argv[1]
-print('query: ' + query)
+if __name__ == '__main__':
+    query = sys.argv[1]
+    print('query: ' + query)
 
-wh = Warehouse()
-results = wh.query(query)
-print('results:')
-print(list(results))
+    wh = Warehouse()
+    results = wh.query(query)
+    print('results:')
+    print(json.dumps(list(results)))

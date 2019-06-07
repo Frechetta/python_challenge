@@ -23,21 +23,6 @@ def get(ip, process=True):
     return data
 
 
-def get_all(ips, process=True):
-    """
-    Get GeoIP data for multiple IPs.
-    :param ips: list of IPs to get GeoIP data for
-    :param process: whether or not to process the GeoIP data or leave it raw
-    :return: list of GeoIP info objects
-    """
-    data = []
-
-    for ip in ips:
-        data.append(get(ip, process))
-
-    return data
-
-
 def _process_data(data):
     """
     Process GeoIP data.

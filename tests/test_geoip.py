@@ -59,27 +59,6 @@ class TestGet(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
-class TestGetAll(unittest.TestCase):
-    def test_none_ips(self):
-        with self.assertRaises(TypeError):
-            geoip.get_all(None)
-
-    def test_no_ips(self):
-        expected = []
-        actual = geoip.get_all([])
-
-        self.assertEqual(expected, actual)
-
-    @patch('challenge.geoip.get')
-    def test(self, mock_get):
-        mock_get.side_effect = [1, 2, 3]
-
-        expected = [1, 2, 3]
-        actual = geoip.get_all(['derp', 'herp', 'lerp'])
-
-        self.assertEqual(expected, actual)
-
-
 class TestProcessData(unittest.TestCase):
     def test_not_dict(self):
         with self.assertRaises(Exception):

@@ -25,21 +25,6 @@ def get(ip, process=True):
     return result
 
 
-def get_all(ips, process=True):
-    """
-    Get RDAP data for multiple IPs.
-    :param ips: list of IPs to get RDAP data for
-    :param process: whether or not to process the RDAP data or leave it raw
-    :return: list of RDAP info objects
-    """
-    data = []
-
-    for ip in ips:
-        data += get(ip, process)
-
-    return data
-
-
 def _process_data(data):
     """
     Process RDAP data.
