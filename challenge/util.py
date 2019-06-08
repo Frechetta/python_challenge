@@ -28,3 +28,5 @@ def get_key_func(index):
         return geoip.get_key
     if index == 'rdap':
         return rdap.get_key
+    if index == 'ip_rdap':
+        return lambda event: '{0}:{1}'.format(event['ip'], event['handle'])
