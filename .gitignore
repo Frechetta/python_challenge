@@ -5,3 +5,4 @@ data/
 .coverage
 tests/__pycache__/
 htmlcov/
+.vscode/

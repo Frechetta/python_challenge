@@ -1,0 +1,33 @@
+start: cmd (" | " cmd)*
+
+?cmd: search_cmd
+   | table_cmd
+   | join_cmd
+
+search_cmd: "search" (" " expr)+
+
+?expr: disjunction_expr
+
+?disjunction_expr: disjunction_expr " OR " not_expr
+           | not_expr
+
+?not_expr: "NOT " comparison_expr -> not_expr
+    | comparison_expr
+
+?comparison_expr: string operator string
+
+operator: "="    -> eq
+        | "!="   -> ne
+        | "<"    -> lt
+        | "<="   -> le
+        | ">"    -> gt
+        | ">="   -> ge
+
+table_cmd: "table" (" " string)+
+
+join_cmd: "join BY " string (", " string)* 
+
+string: /[\w\.\*]+/
+      | ESCAPED_STRING
+
+%import common.ESCAPED_STRING

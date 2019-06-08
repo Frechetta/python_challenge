@@ -1,7 +1,8 @@
 import sys
 import argparse
 import json
-from challenge import geoip, rdap, reader, warehouse
+import lark
+from challenge import geoip, rdap, reader, warehouse, search
 
 
 class Challenge:
@@ -68,6 +69,8 @@ class Challenge:
         """
         Loop and accept input for querying the data.
         """
+        searcher = search.Search(self.warehouse)
+
         running = True
 
         while running:
@@ -84,11 +87,13 @@ class Challenge:
                     if not query:
                         print('No query!')
                         continue
-
-                    print('query: ' + query)
-                    results = self.warehouse.query(query)
-                    print('results:')
-                    print(json.dumps(list(results)))
+                    try:
+                        results = searcher.query('search ' + query)
+                        print('results:')
+                        print(json.dumps(list(results)))
+                    except lark.exceptions.ParseError:
+                        print('Parse error')
+                        continue
                 elif command == 'exit' or command == 'quit':
                     running = False
                 else:
