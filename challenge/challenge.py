@@ -35,35 +35,55 @@ class Challenge:
 
         print('\nRetrieving GeoIP and RDAP data for IPs and writing them to disk...')
 
-        added_geo_ip_rows = 0
-        skipped_geo_ip_rows = 0
-        added_rdap_rows = 0
-        skipped_rdap_rows = 0
+        write_stats = {
+            'geoip': {
+                'added': 0,
+                'skipped': 0
+            },
+            'rdap': {
+                'added': 0,
+                'skipped': 0
+            },
+            'ip_rdap': {
+                'added': 0,
+                'skipped': 0
+            }
+        }
 
         with self.warehouse.open() as wh:
             for ip in ips.keys():
                 geo_ip_info = geoip.get(ip)
-                added = wh.write('geoip', geo_ip_info)
+
+                index = 'geoip'
+                added = wh.write(index, geo_ip_info)
                 if added:
-                    added_geo_ip_rows += 1
+                    write_stats[index]['added'] += 1
                 else:
-                    skipped_geo_ip_rows += 1
+                    write_stats[index]['skipped'] += 1
 
                 rdap_info = rdap.get(ip)
                 for datum in rdap_info:
-                    added = wh.write('rdap', datum)
+                    index = 'rdap'
+                    added = wh.write(index, datum)
                     if added:
-                        added_rdap_rows += 1
+                        write_stats[index]['added'] += 1
                     else:
-                        skipped_rdap_rows += 1
+                        write_stats[index]['skipped'] += 1
+
+                    index = 'ip_rdap'
+                    added = wh.write(index, {'ip': ip, 'handle': datum['handle']})
+                    if added:
+                        write_stats[index]['added'] += 1
+                    else:
+                        write_stats[index]['skipped'] += 1
 
         print('Done.')
 
-        print('\nGeoIP:')
-        print(f'added: {added_geo_ip_rows}, skipped: {skipped_geo_ip_rows}')
-
-        print('RDAP:')
-        print(f'added: {added_rdap_rows}, skipped: {skipped_rdap_rows}')
+        for index, stats in write_stats.items():
+            print(f'\n{index}')
+            added = stats['added']
+            skipped = stats['skipped']
+            print(f'added: {added}, skipped: {skipped}')
 
     def input_loop(self):
         """
@@ -96,6 +116,8 @@ class Challenge:
                         continue
                 elif command == 'exit' or command == 'quit':
                     running = False
+                elif command == '':
+                    continue
                 else:
                     print(f'Unknown command: {command}')
                     continue
