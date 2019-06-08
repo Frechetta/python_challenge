@@ -1,6 +1,6 @@
 import unittest
 import os
-from challenge import reader
+from challenge import warehouse
 
 
 if __name__ == '__main__':
