@@ -42,6 +42,6 @@ class TestReadIps(unittest.TestCase):
             '151.101.193.69': 1
         }
 
-        actual = reader.read_ips('resources/ips.txt')
+        actual = reader.read_ips('tests/resources/ips.txt')
 
         self.assertEqual(expected, actual)

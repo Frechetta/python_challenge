@@ -4,15 +4,26 @@ from challenge import geoip, rdap
 IP_PATTERN = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
-def verify_ip(ip):
-    if not isinstance(ip, str):
-        raise Exception('Value is not a string. Type: {0}'.format(type(ip)))
+def verify_ip(val):
+    """
+    Verify a value represents an IP address.
+    Raise an exception if the value is not a IP address.
+    :param val:
+    :return: None
+    """
+    if not isinstance(val, str):
+        raise Exception(f'Value is not a string. Type: {type(val)}')
 
-    if not IP_PATTERN.fullmatch(ip):
-        raise Exception('Value does not seem to be an IPv4 address'.format(ip))
+    if not IP_PATTERN.fullmatch(val):
+        raise Exception('Value does not seem to be an IPv4 address')
 
 
 def get_key_func(index):
+    """
+    Get the key function for the specified index.
+    :param index:
+    :return: they key function
+    """
     if index == 'geoip':
         return geoip.get_key
     if index == 'rdap':

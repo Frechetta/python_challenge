@@ -2,3 +2,6 @@ venv/
 challenge/__pycache__/
 .idea/
 data/
+.coverage
+tests/__pycache__/
+htmlcov/

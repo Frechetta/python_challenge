@@ -1,66 +1,65 @@
 import json
 import re
 from pathlib import Path
+from contextlib import contextmanager
 from challenge import util
-import sys
 
 
 class Warehouse:
+    """
+    Manages reading and writing data.
+    """
     def __init__(self, path='data'):
         self.path = Path(path)
         self.keys = {}
         self.open_files = {}
-        self.open = False
+        self.opened = False
 
-        self.init()
+    @contextmanager
+    def open(self):
+        """
+        Open the warehouse by reading keys from data files and opening them for writing
+        """
+        try:
+            files = self.path.glob('*')
+            for file_path in files:
+                index = str(file_path.name).replace('.json', '')
 
-    def init(self):
-        if not self.path.exists():
-            return
+                key_func = util.get_key_func(index)
 
-        files = self.path.glob('*')
-        for file_path in files:
-            index = str(file_path.name).replace('.json', '')
+                if index not in self.keys:
+                    self.keys[index] = set()
 
-            key_func = util.get_key_func(index)
+                with file_path.open() as file:
+                    for line in file:
+                        event = json.loads(line)
 
-            if index not in self.keys:
-                self.keys[index] = set()
+                        key = key_func(event)
+                        self.keys[index].add(key)
 
-            with file_path.open() as file:
-                for line in file:
-                    event = json.loads(line)
+                self.open_files[index] = file_path.open('a')
 
-                    key = key_func(event)
-                    self.keys[index].add(key)
+            self.opened = True
 
-    def __enter__(self):
-        files = self.path.glob('*')
-        for file_path in files:
-            index = str(file_path.name).replace('.json', '')
-            self.open_files[index] = file_path.open('a')
+            yield self
+        finally:
+            for file in self.open_files.values():
+                file.close()
 
-        self.open = True
-
-        return self
-
-    def __exit__(self, t, val, tb):
-        for file in self.open_files.values():
-            file.close()
-
-        self.open = False
-
-        if tb is not None:
-            return False
-
-        return True
+            self.opened = False
 
     def write(self, index, data):
+        """
+        Write data to an index (file).
+        :param index:
+        :param data:
+        :return: True if the data was written; False if it was not
+        """
         if not self.open:
             raise Exception('Not within context of a warehouse!')
 
         if not isinstance(data, dict):
-            raise Exception('Data object is not a dict. Type: {0}'.format(type(data)))
+            raise Exception(f'Data object is not a dict. Type: {type(data)}')
 
         self.path.mkdir(exist_ok=True)
 
@@ -86,6 +85,10 @@ class Warehouse:
         return False
 
     def query(self, query_str):
+        """
+        Run a query against the data and yield the results.
+        :param query_str:
+        """
         quote_positions = [m.start() for m in re.finditer('"', query_str)]
         print(quote_positions)
         if len(quote_positions) % 2 != 0:
@@ -129,11 +132,19 @@ class Warehouse:
             with file_path.open() as file:
                 for line in file:
                     event = json.loads(line)
-                    if self.filter_event(event, line, field_filters, text_filters):
+                    if self._filter_event(event, line, field_filters, text_filters):
                         yield event
 
     @staticmethod
-    def filter_event(event, raw_event, field_filters, text_filters):
+    def _filter_event(event, raw_event, field_filters, text_filters):
+        """
+        Filter an event.
+        :param event:
+        :param raw_event: the event in string format
+        :param field_filters: filters involving a key, value pair
+        :param text_filters: filters involving plain text
+        :return: True if the event matches the filters; False if not
+        """
         for field_filter in field_filters:
             parts = field_filter.split('=')
             field = parts[0]
@@ -147,13 +158,3 @@ class Warehouse:
                 return False
 
         return True
-
-
-if __name__ == '__main__':
-    query = sys.argv[1]
-    print('query: ' + query)
-
-    wh = Warehouse()
-    results = wh.query(query)
-    print('results:')
-    print(json.dumps(list(results)))

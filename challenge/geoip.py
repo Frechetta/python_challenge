@@ -30,7 +30,7 @@ def _process_data(data):
     :return: the processed data
     """
     if not isinstance(data, dict):
-        raise Exception('Value is not a dict. Type: {0}'.format(type(data)))
+        raise Exception(f'Value is not a dict. Type: {type(data)}')
 
     new_data = deepcopy(data)
 
@@ -41,4 +41,9 @@ def _process_data(data):
 
 
 def get_key(data):
+    """
+    Produce a key for the specified data.
+    :param data:
+    :return: the key
+    """
     return data['ip']

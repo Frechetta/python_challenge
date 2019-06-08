@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import challenge.geoip as geoip
+from challenge import geoip
 
 
 if __name__ == '__main__':

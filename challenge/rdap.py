@@ -33,7 +33,7 @@ def _process_data(data):
     :return: processed data in the form of an array
     """
     if not isinstance(data, dict):
-        raise Exception('Value is not a dict. Type: {0}'.format(type(data)))
+        raise Exception(f'Value is not a dict. Type: {type(data)}')
 
     top_level_data = {'class': 'root'}
 
@@ -70,7 +70,7 @@ def _parse_events(events):
             continue
 
         action = event['eventAction'].replace(' ', '_')
-        key = 'event_{0}'.format(action)
+        key = f'event_{action}'
 
         parsed_events[key] = event['eventDate']
 
@@ -131,7 +131,7 @@ def _parse_vcard(vcard):
             if isinstance(value, list):
                 value = ','.join(value)
 
-        key = 'vcard_{0}'.format(key)
+        key = f'vcard_{key}'
 
         parsed_vcard[key] = value
 
@@ -139,4 +139,9 @@ def _parse_vcard(vcard):
 
 
 def get_key(data):
+    """
+    Produce a key for the specified data.
+    :param data:
+    :return: the key
+    """
     return data['handle']
