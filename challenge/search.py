@@ -131,4 +131,4 @@ class SearchTransformer(Transformer):
         return {'type': 'join', 'by_fields': items}
 
     def string(self, items):
-        return items[0][:]
+        return items[0][:].replace('\"', '')
