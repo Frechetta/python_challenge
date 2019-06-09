@@ -16,12 +16,16 @@ class Search:
     def __init__(self, wh):
         self.wh = wh
 
-    def query(self, query_str):
+    def query(self, query_str, verbose=False):
         """
         Run a query against the data and yield the results.
         :param query_str:
+        :param verbose: print verbosely
         """
-        pipeline = Pipeline.create_pipeline(query_str)
+        if verbose:
+            print(f'query: {query_str}')
+
+        pipeline = Pipeline.create_pipeline(query_str, verbose)
 
         files = self.wh.path.glob('*')
         joined_files = [file_path.open() for file_path in files]
@@ -42,15 +46,16 @@ class Pipeline:
         self.commands = commands
 
     @staticmethod
-    def create_pipeline(query):
+    def create_pipeline(query, verbose=False):
         tree = Pipeline.parser.parse(query)
         commands = Pipeline.SearchTransformer().transform(tree)
         pipeline = Pipeline(commands)
 
-        print('tree:')
-        print(tree.pretty())
-        print('pipeline:')
-        print(json.dumps(pipeline.to_json(), indent=4))
+        if verbose:
+            print('tree:')
+            print(tree.pretty())
+            print('pipeline:')
+            print(json.dumps(pipeline.to_json(), indent=4))
 
         return pipeline
 
@@ -157,12 +162,12 @@ class Pipeline:
 
                 return True
 
-    class TableCommand(EventCommand):
+    class FieldsCommand(EventCommand):
         def __init__(self, fields):
             self.fields = fields
 
         def to_json(self):
-            return {'type': 'table', 'fields': self.fields}
+            return {'type': 'fields', 'fields': self.fields}
 
         def execute(self, events):
             for event in events:
@@ -176,22 +181,20 @@ class Pipeline:
                     yield new_event
 
     class JoinCommand(TransformingCommand):
-        def __init__(self, by_fields):
-            self.by_fields = by_fields
+        def __init__(self, by_field):
+            self.by_field = by_field
 
         def to_json(self):
-            return {'type': 'join', 'by_fields': self.by_fields}
+            return {'type': 'join', 'by_field': self.by_field}
 
         def execute(self, events):
             temp_events = {}
 
-            join_field = self.by_fields[0]
-
             for event in events:
-                if join_field not in event:
+                if self.by_field not in event:
                     continue
 
-                join_value = event[join_field]
+                join_value = event[self.by_field]
 
                 if join_value not in temp_events:
                     temp_events[join_value] = event
@@ -209,6 +212,65 @@ class Pipeline:
 
             for event in temp_events.values():
                 yield event
+
+    class PrettyprintCommand(TransformingCommand):
+        def __init__(self, format_type):
+            self.format_type = format_type
+
+        def to_json(self):
+            return {'type': 'prettyprint', 'format': self.format_type}
+
+        def execute(self, events):
+            if self.format_type == 'json':
+                for event in events:
+                    yield json.dumps(event, indent=4)
+            elif self.format_type == 'table':
+                for event in self.pretty_print_table(events):
+                    yield event
+
+        def pretty_print_table(self, events):
+            fields_dict = {}
+
+            events_list = []
+
+            for event in events:
+                for field, value in event.items():
+                    value = str(value)
+                    value_len = len(value)
+
+                    if field not in fields_dict:
+                        fields_dict[field] = {'position': len(fields_dict) + 1, 'len': value_len}
+                    else:
+                        if value_len > fields_dict[field]['len']:
+                            fields_dict[field]['len'] = value_len
+
+                events_list.append(event)
+
+            fields = [{'name': d[0], **d[1]} for d in sorted(fields_dict.items(), key=lambda x: x[1]['position'])]
+
+            header = ''
+
+            for field in fields:
+                field_len = len(field['name'])
+                if field_len > field['len']:
+                    field['len'] = field_len
+
+                header += field['name'].ljust(field['len'] + 2)
+
+            yield header
+
+            for event in events_list:
+                line = ''
+
+                for field in fields:
+                    field_name = field['name']
+                    value = ''
+                    if field_name in event:
+                        value = str(event[field_name])
+
+                    line += value.ljust(field['len'] + 2)
+
+                yield line
 
     class SearchTransformer(Transformer):
         start = list
@@ -243,11 +305,20 @@ class Pipeline:
         def not_expr(self, items):
             return Pipeline.SearchCommand.NotExpression(items[0])
 
-        def table_cmd(self, items):
-            return Pipeline.TableCommand(items)
+        def fields_cmd(self, items):
+            return Pipeline.FieldsCommand(items)
 
         def join_cmd(self, items):
-            return Pipeline.JoinCommand(items)
+            return Pipeline.JoinCommand(items[0])
+
+        def pp_cmd(self, items):
+            return Pipeline.PrettyprintCommand(items[0])
+
+        def json(self, items):
+            return 'json'
+
+        def table(self, items):
+            return 'table'
 
         def string(self, items):
             return items[0][:].replace('\"', '')
