@@ -1,6 +1,7 @@
 import json
-from fnmatch import fnmatch
 import sys
+from fnmatch import fnmatch
+from itertools import chain
 from lark import Lark, Transformer
 
 
@@ -23,11 +24,15 @@ class Search:
         pipeline = Pipeline.create_pipeline(query_str)
 
         files = self.wh.path.glob('*')
-        for file_path in files:
-            with file_path.open() as file:
-                events = pipeline.execute(file)
-                for event in events:
-                    yield event
+        joined_files = [file_path.open() for file_path in files]
+        data_in = chain(*joined_files)
+
+        events = pipeline.execute(data_in)
+        for event in events:
+            yield event
+
+        for file in joined_files:
+            file.close()
 
 
 class Pipeline:
@@ -204,7 +209,6 @@ class Pipeline:
 
             for event in temp_events.values():
                 yield event
-
 
     class SearchTransformer(Transformer):
         start = list
