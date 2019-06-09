@@ -20,6 +20,7 @@ class Challenge:
     def _parse_args(args):
         parser = argparse.ArgumentParser(description='Process IPs from a text file and/or query IP data')
         parser.add_argument('path', nargs='?', default=None)
+        parser.add_argument('-v', '--verbose', action='store_true')
         return parser.parse_args(args)
 
     def read_data(self, path):
@@ -108,9 +109,10 @@ class Challenge:
                         print('No query!')
                         continue
                     try:
-                        results = searcher.query('search ' + query)
+                        results = searcher.query('search ' + query, verbose=self.args.verbose)
                         print('results:')
-                        print(json.dumps(list(results)))
+                        for result in results:
+                            print(result)
                     except lark.exceptions.ParseError:
                         print('Parse error')
                         continue
