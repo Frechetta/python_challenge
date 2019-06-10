@@ -16,6 +16,9 @@ def get(ip, process=True):
 
     response = requests.get(GEO_IP_URL.format(ip))
 
+    if response.status_code == 404:
+        return None
+
     data = response.json()
     if process:
         data = _process_data(data)

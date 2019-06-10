@@ -18,7 +18,11 @@ def get(ip, process=True):
 
     response = requests.get(RDAP_URL.format(ip))
 
+    if response.status_code == 404:
+        return None
+
     result = response.json()
+
     if process:
         result = _process_data(result)
 
@@ -50,7 +54,7 @@ def _process_data(data):
     all_data = [top_level_data]
 
     if 'entities' in data:
-        entities = filter(lambda e: e['objectClassName'] == 'entity', data['entities'])
+        entities = filter(lambda e: 'objectClassName' in e and e['objectClassName'] == 'entity', data['entities'])
         for entity in entities:
             all_data += _parse_entity(entity, top_level_data['handle'])
 
