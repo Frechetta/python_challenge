@@ -3,6 +3,7 @@ import os
 from fnmatch import fnmatch
 from itertools import chain
 from lark import Lark, Transformer
+from collections.abc import Iterable
 
 
 def query(query_str, wh, verbose=False):
@@ -36,8 +37,8 @@ class Pipeline:
         self.commands = commands
 
     @staticmethod
-    def create_pipeline(query, verbose=False):
-        tree = Pipeline.parser.parse(query)
+    def create_pipeline(query_str, verbose=False):
+        tree = Pipeline.parser.parse(query_str)
         commands = Pipeline.SearchTransformer().transform(tree)
         pipeline = Pipeline(commands)
 
@@ -53,6 +54,9 @@ class Pipeline:
         return [command.to_json() for command in self.commands]
 
     def execute(self, events):
+        if not isinstance(events, Iterable):
+            raise Exception('events object is not iterable!')
+
         for command in self.commands:
             events = command.execute(events)
 
