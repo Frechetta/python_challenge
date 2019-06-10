@@ -134,4 +134,4 @@ Using `format=table` prints the results as a formatted table.
 
 `search index=rdap | prettyprint format=table`
 
-If there are a lot of fields in the result set, the results will overflow onto the next line(s); therefore, it is recommended to pare down unwanted fields using `fields` before using `prettyprint format=table`.
+If there are a lot of fields in the result set, the results will overflow onto the next line(s); therefore, it is recommended to pare down unwanted fields using `fields` before using `prettyprint format=table`. This happens expecially when joining `ip_rdap` and `rdap` data together. Many IPs share the same `rdap` data, so the IP values will become very long. I recommend specifying the IP(s) you are interested in before doing the `join`.

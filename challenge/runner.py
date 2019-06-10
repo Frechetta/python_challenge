@@ -99,7 +99,6 @@ class Challenge:
                             if index == 'ip_rdap':
                                 added = wh.write(index, {'ip': ip, 'handle': item['handle']})
                             else:
-                                print(item)
                                 added = wh.write(index, item)
 
                             if added:
