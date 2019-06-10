@@ -1,7 +1,9 @@
 import sys
 import argparse
-import json
 import lark
+import signal
+from multiprocessing import Pool, Manager
+from functools import partial
 from challenge import geoip, rdap, reader, warehouse, search
 
 
@@ -31,10 +33,37 @@ class Challenge:
         """
         print('\nReading IPs from file...')
         ips = reader.read_ips(path)
-        print('Done.')
-        print(ips)
+        num_ips = len(ips)
+        print(f'{num_ips} IPs found.')
 
-        print('\nRetrieving GeoIP and RDAP data for IPs and writing them to disk...')
+        print('\nRetrieving GeoIP and RDAP data for IPs...')
+        print('0%')
+
+        with Manager() as manager:
+            original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+            pool = Pool(4)
+
+            signal.signal(signal.SIGINT, original_sigint_handler)
+
+            shared = manager.list([{'i': 0, 'p': 0, 'num': num_ips}])
+            retrieve = partial(self.retrieve_ip_data, shared)
+
+            try:
+                results = pool.map_async(retrieve, ips.keys())
+                results = results.get(1800)
+            except KeyboardInterrupt:
+                print('Terminating')
+                pool.terminate()
+                sys.exit(0)
+            else:
+                pool.close()
+
+            pool.join()
+
+        print('Done.')
+
+        print('Writing data to disk...')
 
         write_stats = {
             'geoip': {
@@ -52,39 +81,103 @@ class Challenge:
         }
 
         with self.warehouse.open() as wh:
-            for ip in ips.keys():
-                geo_ip_info = geoip.get(ip)
+            for result in results:
+                ip = result.pop('ip')
 
-                index = 'geoip'
-                added = wh.write(index, geo_ip_info)
-                if added:
-                    write_stats[index]['added'] += 1
-                else:
-                    write_stats[index]['skipped'] += 1
+                for index, data in result.items():
+                    if not data:
+                        continue
 
-                rdap_info = rdap.get(ip)
-                for datum in rdap_info:
-                    index = 'rdap'
-                    added = wh.write(index, datum)
-                    if added:
-                        write_stats[index]['added'] += 1
+                    if index == 'geoip':
+                        added = wh.write(index, data)
+                        if added:
+                            write_stats[index]['added'] += 1
+                        else:
+                            write_stats[index]['skipped'] += 1
                     else:
-                        write_stats[index]['skipped'] += 1
+                        for item in data:
+                            if index == 'ip_rdap':
+                                added = wh.write(index, {'ip': ip, 'handle': item['handle']})
+                            else:
+                                print(item)
+                                added = wh.write(index, item)
 
-                    index = 'ip_rdap'
-                    added = wh.write(index, {'ip': ip, 'handle': datum['handle']})
-                    if added:
-                        write_stats[index]['added'] += 1
-                    else:
-                        write_stats[index]['skipped'] += 1
-
-        print('Done.')
+                            if added:
+                                write_stats[index]['added'] += 1
+                            else:
+                                write_stats[index]['skipped'] += 1
 
         for index, stats in write_stats.items():
             print(f'\n{index}')
             added = stats['added']
             skipped = stats['skipped']
             print(f'added: {added}, skipped: {skipped}')
+
+    @staticmethod
+    def retrieve_ip_data(shared, ip):
+        result = {
+            'ip': ip,
+            'geoip': None,
+            'rdap': [],
+            'ip_rdap': []
+        }
+
+        geo_ip_info = geoip.get(ip)
+
+        if geo_ip_info:
+            result['geoip'] = geo_ip_info
+
+            '''
+            index = 'geoip'
+            added = wh.write(index, geo_ip_info)
+            if added:
+                write_stats[index]['added'] += 1
+            else:
+                write_stats[index]['skipped'] += 1
+            '''
+
+        rdap_info = rdap.get(ip)
+
+        if rdap_info:
+            for datum in rdap_info:
+                if 'handle' not in datum:
+                    continue
+
+                result['rdap'].append(datum)
+
+                '''
+                index = 'rdap'
+                added = wh.write(index, datum)
+                if added:
+                    write_stats[index]['added'] += 1
+                else:
+                    write_stats[index]['skipped'] += 1
+                '''
+
+                result['ip_rdap'].append({'ip': ip, 'handle': datum['handle']})
+
+                '''
+                index = 'ip_rdap'
+                added = wh.write(index, {'ip': ip, 'handle': datum['handle']})
+                if added:
+                    write_stats[index]['added'] += 1
+                else:
+                    write_stats[index]['skipped'] += 1
+                '''
+
+        d = shared[0]
+
+        d['i'] += 1
+
+        new_p = round(d['i'] / d['num'] * 100)
+
+        if new_p != d['p']:
+            print(f'{new_p}%')
+            d['p'] = new_p
+
+        shared[0] = d
+
+        return result
 
     def input_loop(self):
         """
