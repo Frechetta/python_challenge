@@ -20,6 +20,8 @@ class Warehouse:
         """
         Open the warehouse by reading keys from data files and opening them for writing
         """
+        self.path.mkdir(exist_ok=True)
+
         try:
             files = self.path.glob('*')
             for file_path in files:
@@ -64,8 +66,6 @@ class Warehouse:
 
         if not isinstance(data, dict):
             raise Exception(f'Data object is not a dict. Type: {type(data)}')
-
-        self.path.mkdir(exist_ok=True)
 
         if index not in self.open_files:
             file_path = self.path / (index + '.json')
