@@ -6,6 +6,8 @@ If you want to search the existing data without loading a new IP file, use `pyth
 
 Throughout the rest of this document, I will use the terms "search" and "query" interchangebly.
 
+Before going into searching, I will explain the concept of the index.
+
 ## The Index
 
 Indices are groups of like-data; they can be thought of as SQL tables. All events belong to an index. There are three indices:
@@ -65,6 +67,14 @@ Use the `OR` modifier to specify multiple values for a field.
 or
 
 `search index=geoip NOT ip=192.268.1.15`
+
+#### Retrieving data for a specific IP from multiple indices
+
+It is not required to search by index.
+
+`search ip=192.168.1.15`
+
+The above search will return data with `ip=192.168.1.15` from all indices (in this case, data from indices `geoip` and `ip_rdap` will be returned).
 
 ### 2. fields
 
