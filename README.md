@@ -34,15 +34,15 @@ The `search` command allows you to filter the data using key-value pairs and mod
 
 search \<expression>...
 
-*\<expression>*
+**\<expression>**
 
 \<comparison-expression> | NOT \<expression> | \<expression> OR \<expression>
 
-*\<comparison-expression>*
+**\<comparison-expression>**
 
 \<field>\<operator>\<value>
 
-*\<operator>*
+**\<operator>**
 
 = | != | < | <= | > | >=
 
@@ -92,7 +92,7 @@ Remove all fields from the results except for `ip` and `continent_name`:
 
 ### 3. join
 
-The `join` command allows you to join data together by a field (the "by-field"). Each event that shares the same value for the by-field is joined together under one event. This allows you to join data from two disparate data sources. Example: `join BY <>
+The `join` command allows you to join data together by a field (the "by-field"). Each event that shares the same value for the by-field is joined together under one event. This allows you to join data from two disparate data sources.
 
 #### Usage
 
@@ -114,7 +114,7 @@ The `prettyprint` command may only be used as the last command in the search. It
 
 prettyprint format=\<format>
 
-*\<format>*
+**\<format>**
 
 json | table
 
