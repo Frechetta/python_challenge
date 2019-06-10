@@ -1,8 +1,8 @@
 # Python Challenge
 
-Requires Python 3.
+Requires Python 3.7
 
-Run with `python -m challenge.runner <path-to-ip-file>`. This will parse the IP file, query data for each IP, and save that data to disk. Then, it will go into an input loop allowing you to search the data. Type `exit`, `quit`, or enter `CTRL+C` to quit. Type `search <query-string>` to search the data.
+Install dependencies with `pip install -r requirements.txt`, then run with `python -m challenge.runner <path-to-ip-file>`. This will parse the IP file, query data for each IP, and save that data to disk. Then, it will go into an input loop allowing you to search the data. Type `exit`, `quit`, or enter `CTRL+C` to quit. Type `search <query-string>` to search the data.
 
 If you want to search the existing data without loading a new IP file, run it without a path: `python -m challenge.runner`.
 
