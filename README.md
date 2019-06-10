@@ -10,11 +10,11 @@ Before going into searching, I will explain the concept of the index.
 
 ## The Index
 
-Indices are groups of like-data; they can be thought of as SQL tables. All events belong to an index. There are three indices:
+An index is a group of like-data; it can be thought of as a SQL table. All events belong to an index. There are three indices:
 
-1. geoip - containes GeoIP data
-2. rdap - contains RDAP data
-3. ip_rdap - a joiner-table of sorts, existing to join an IP with RDAP data (IPs are not stored with RDAP data as RDAP data can apply to multiple IPs)
+1. geoip: contains GeoIP data
+2. rdap: contains RDAP data
+3. ip_rdap: a joiner-table of sorts, existing to join an IP with RDAP data (IPs are not stored with RDAP data as RDAP data can apply to multiple IPs)
 
 Each index has its own file. For example, the file for the `geoip` index is `data/geoip.json`.
 
