@@ -1,8 +1,10 @@
 # Python Challenge
 
-Run with `python -m challenge.challenge <path-to-ip-file>`. This will parse the IP file, query data for each IP, and save that data to disk. Then, it will go into an input loop allowing you to search the data. Type `exit`, `quit`, or enter `CTRL+C` to quit. Type `search <query-string>` to search the data.
+Requires Python 3.
 
-If you want to search the existing data without loading a new IP file, use `python -m challenge.challenge`.
+Run with `python -m challenge.runner <path-to-ip-file>`. This will parse the IP file, query data for each IP, and save that data to disk. Then, it will go into an input loop allowing you to search the data. Type `exit`, `quit`, or enter `CTRL+C` to quit. Type `search <query-string>` to search the data.
+
+If you want to search the existing data without loading a new IP file, run it without a path: `python -m challenge.runner`.
 
 Throughout the rest of this document, I will use the terms "search" and "query" interchangebly.
 
@@ -12,9 +14,9 @@ Before going into searching, I will explain the concept of the index.
 
 An index is a group of like-data; it can be thought of as a SQL table. All events belong to an index. There are three indices:
 
-1. geoip: contains GeoIP data
-2. rdap: contains RDAP data
-3. ip_rdap: a joiner-table of sorts, existing to join an IP with RDAP data (IPs are not stored with RDAP data as RDAP data can apply to multiple IPs)
+1. *geoip*: contains GeoIP data
+2. *rdap*: contains RDAP data
+3. *ip_rdap*: a joiner-table of sorts, existing to join an IP with RDAP data (IPs are not stored with RDAP data as RDAP data can apply to multiple IPs)
 
 Each index has its own file. For example, the file for the `geoip` index is `data/geoip.json`.
 
@@ -74,7 +76,7 @@ It is not required to search by index.
 
 `search ip=192.168.1.15`
 
-The above search will return data with `ip=192.168.1.15` from all indices (in this case, data from indices `geoip` and `ip_rdap` will be returned).
+The above search will return data with `ip=192.168.1.15` from all indices (in this case, data from indices `geoip` and `ip_rdap` will be returned; events in `rdap` do not contain an `ip` field).
 
 ### 2. fields
 
