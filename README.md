@@ -34,15 +34,15 @@ The `search` command allows you to filter the data using key-value pairs and mod
 
 search \<expression>...
 
-*<expression>*
+*\<expression>*
 
-<comparison-expression> | NOT <expression> | <expression> OR <expression>
+\<comparison-expression> | NOT \<expression> | \<expression> OR \<expression>
 
-*<comparison-expression>*
+*\<comparison-expression>*
 
-<field><operator><value>
+\<field>\<operator>\<value>
 
-*<operator>*
+*\<operator>*
 
 = | != | < | <= | > | >=
 
@@ -82,7 +82,7 @@ The `fields` command allows you to display only the fields you want to see.
 
 #### Usage
 
-fields <field>...
+fields \<field>...
 
 #### Example
 
@@ -96,7 +96,7 @@ The `join` command allows you to join data together by a field (the "by-field").
 
 #### Usage
 
-join BY <by-field>
+join BY \<by-field>
 
 #### Example
 
@@ -112,9 +112,9 @@ The `prettyprint` command may only be used as the last command in the search. It
 
 #### Usage
 
-prettyprint format=<format>
+prettyprint format=\<format>
 
-*<format>*
+*\<format>*
 
 json | table
 
