@@ -51,7 +51,7 @@ class Challenge:
 
             try:
                 results = pool.map_async(retrieve, ips.keys())
-                results = results.get(1800)
+                results = results.get(3600)
             except KeyboardInterrupt:
                 print('Terminating')
                 pool.terminate()
