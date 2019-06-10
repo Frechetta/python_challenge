@@ -32,7 +32,7 @@ The `search` command allows you to filter the data using key-value pairs and mod
 
 #### Usage:
 
-search <expression>...
+search \<expression>...
 
 *<expression>*
 
