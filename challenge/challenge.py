@@ -90,8 +90,6 @@ class Challenge:
         """
         Loop and accept input for querying the data.
         """
-        searcher = search.Search(self.warehouse)
-
         running = True
 
         while running:
@@ -109,7 +107,7 @@ class Challenge:
                         print('No query!')
                         continue
                     try:
-                        results = searcher.query('search ' + query, verbose=self.args.verbose)
+                        results = search.query('search ' + query, self.warehouse, verbose=self.args.verbose)
                         print('results:')
                         for result in results:
                             print(result)

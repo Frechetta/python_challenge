@@ -43,8 +43,12 @@ class Warehouse:
 
             yield self
         finally:
-            for file in self.open_files.values():
-                file.close()
+            try:
+                while True:
+                    file = self.open_files.popitem()[1]
+                    file.close()
+            except KeyError:
+                pass
 
             self.opened = False
 
@@ -55,7 +59,7 @@ class Warehouse:
         :param data:
         :return: True if the data was written; False if it was not
         """
-        if not self.open:
+        if not self.opened:
             raise Exception('Not within context of a warehouse!')
 
         if not isinstance(data, dict):

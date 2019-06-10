@@ -1,46 +1,36 @@
 import json
-import sys
+import os
 from fnmatch import fnmatch
 from itertools import chain
 from lark import Lark, Transformer
 
 
-if __name__ == '__main__':
-    parser = Lark.open('grammar.lark')
-    text = ' '.join(sys.argv[1:])
-    print('text: ', text)
-    print(parser.parse(text).pretty())
+def query(query_str, wh, verbose=False):
+    """
+    Run a query against the data and yield the results.
+    :param query_str:
+    :param wh: the warehouse storing the data to query against
+    :param verbose: print verbosely
+    """
+    if verbose:
+        print(f'query: {query_str}')
 
+    pipeline = Pipeline.create_pipeline(query_str, verbose)
 
-class Search:
-    def __init__(self, wh):
-        self.wh = wh
+    files = wh.path.glob('*')
+    joined_files = [file_path.open() for file_path in files]
+    data_in = chain(*joined_files)
 
-    def query(self, query_str, verbose=False):
-        """
-        Run a query against the data and yield the results.
-        :param query_str:
-        :param verbose: print verbosely
-        """
-        if verbose:
-            print(f'query: {query_str}')
+    events = pipeline.execute(data_in)
+    for event in events:
+        yield event
 
-        pipeline = Pipeline.create_pipeline(query_str, verbose)
-
-        files = self.wh.path.glob('*')
-        joined_files = [file_path.open() for file_path in files]
-        data_in = chain(*joined_files)
-
-        events = pipeline.execute(data_in)
-        for event in events:
-            yield event
-
-        for file in joined_files:
-            file.close()
+    for file in joined_files:
+        file.close()
 
 
 class Pipeline:
-    parser = Lark.open('grammar.lark')
+    parser = Lark.open(os.path.join(os.path.dirname(__file__), 'grammar.lark'))
 
     def __init__(self, commands):
         self.commands = commands
@@ -127,10 +117,10 @@ class Pipeline:
 
                 if self.op == 'eq' and not fnmatch(event_value, self.val) or \
                         self.op == 'ne' and fnmatch(event_value, self.val) or \
-                        self.op == 'lt' and float(event_value) < float(self.val) or \
-                        self.op == 'le' and float(event_value) <= float(self.val) or \
-                        self.op == 'gt' and float(event_value) > float(self.val) or \
-                        self.op == 'ge' and float(event_value) >= float(self.val):
+                        self.op == 'lt' and float(event_value) >= float(self.val) or \
+                        self.op == 'le' and float(event_value) > float(self.val) or \
+                        self.op == 'gt' and float(event_value) <= float(self.val) or \
+                        self.op == 'ge' and float(event_value) < float(self.val):
                     return False
 
                 return True
