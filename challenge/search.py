@@ -31,6 +31,10 @@ def query(query_str, wh, verbose=False):
 
 
 class Pipeline:
+    """
+    Represents a search pipeline; each command is a stage in the pipeline.
+    Each stage is run on all the data in turn.
+    """
     parser = Lark.open(os.path.join(os.path.dirname(__file__), 'grammar.lark'))
 
     def __init__(self, commands):
@@ -38,6 +42,13 @@ class Pipeline:
 
     @staticmethod
     def create_pipeline(query_str, verbose=False):
+        """
+        Create a pipeline object from the query string using Lark to parse the query, turning it into a tree.
+        Then, the tree is parsed to produce a pipeline and its stages.
+        :param query_str:
+        :param verbose:
+        :return: the pipeline object
+        """
         tree = Pipeline.parser.parse(query_str)
         commands = Pipeline.SearchTransformer().transform(tree)
         pipeline = Pipeline(commands)
@@ -51,9 +62,19 @@ class Pipeline:
         return pipeline
 
     def to_json(self):
+        """
+        Produce a JSON representation of this pipeline.
+        :return: JSON representation of this pipeline.
+        """
         return [command.to_json() for command in self.commands]
 
     def execute(self, events):
+        """
+        Run each stage on the events in turn.
+        Accepts an events iterable.
+        :param events:
+        :return: processed events
+        """
         if not isinstance(events, Iterable):
             raise Exception('events object is not iterable!')
 
@@ -63,22 +84,49 @@ class Pipeline:
         return events
 
     class Command:
+        """
+        Command interface.
+        """
         def to_json(self):
+            """
+            Produce a JSON representation of this command.
+            :return: JSON representation of this command.
+            """
             return ''
 
         def execute(self, events):
+            """
+            Run this command (stage) on the events.
+            :param events:
+            :return: processed events
+            """
             return events
 
     class StreamingCommand(Command):
+        """
+        Streaming command interface.
+        For filtering events.
+        """
         pass
 
     class EventCommand(Command):
+        """
+        Event command interface.
+        For modifying events.
+        """
         pass
 
     class TransformingCommand(Command):
+        """
+        Transforming command interface.
+        For transforming the entire event set.
+        """
         pass
 
     class SearchCommand(StreamingCommand):
+        """
+        Command for filtering events.
+        """
         def __init__(self, expressions):
             self.expressions = expressions
 
@@ -86,6 +134,12 @@ class Pipeline:
             return {'type': 'search', 'expressions': [expression.to_json() for expression in self.expressions]}
 
         def execute(self, events):
+            """
+            For each event, check if all expressions (conditions) pass.
+            If they do, yield the event.
+            :param events:
+            :return:
+            """
             for event in events:
                 if isinstance(event, str):
                     event = json.loads(event)
@@ -98,13 +152,28 @@ class Pipeline:
                     yield event
 
         class Expression:
+            """
+            Expression interface.
+            """
             def to_json(self):
+                """
+                Produce a JSON representation of this expression.
+                :return: JSON representation of this expression.
+                """
                 return ''
 
             def evaluate(self, event):
+                """
+                Evaluate the event.
+                :param event:
+                :return: True of the event passes this expression (condition), False otherwise.
+                """
                 return True
 
         class ComparisonExpression(Expression):
+            """
+            Expression for comparing a field to a value in an event.
+            """
             def __init__(self, field, val, op):
                 self.field = field
                 self.val = val
@@ -114,6 +183,11 @@ class Pipeline:
                 return {'type': 'comparison', 'field': self.field, 'val': self.val, 'op': self.op}
 
             def evaluate(self, event):
+                """
+                Test an event.
+                :param event:
+                :return: True if the test passes, False otherwise.
+                """
                 if self.field not in event:
                     return False
 
@@ -130,6 +204,9 @@ class Pipeline:
                 return True
 
         class DisjunctionExpression(Expression):
+            """
+            Expression for OR'ing multiple expressions.
+            """
             def __init__(self, parts):
                 self.parts = parts
 
@@ -137,6 +214,10 @@ class Pipeline:
                 return {'type': 'disjunction', 'parts': [part.to_json() for part in self.parts]}
 
             def evaluate(self, event):
+                """
+                :param event:
+                :return: True if at least one expression passes, False otherwise.
+                """
                 for part in self.parts:
                     if part.evaluate(event):
                         return True
@@ -144,6 +225,9 @@ class Pipeline:
                 return False
 
         class NotExpression(Expression):
+            """
+            Expression for NOT'ing an expression
+            """
             def __init__(self, item):
                 self.item = item
 
@@ -151,12 +235,19 @@ class Pipeline:
                 return {'type': 'not', 'item': self.item.to_json()}
 
             def evaluate(self, event):
+                """
+                :param event:
+                :return: False if the test succeeds, True otherwise.
+                """
                 if self.item.evaluate(event):
                     return False
 
                 return True
 
     class FieldsCommand(EventCommand):
+        """
+        Command to filter out fields from events.
+        """
         def __init__(self, fields):
             self.fields = fields
 
@@ -164,6 +255,11 @@ class Pipeline:
             return {'type': 'fields', 'fields': self.fields}
 
         def execute(self, events):
+            """
+            For each event, produce a new event with the desired fields.
+            :param events:
+            :return:
+            """
             for event in events:
                 new_event = {}
 
@@ -175,6 +271,9 @@ class Pipeline:
                     yield new_event
 
     class JoinCommand(TransformingCommand):
+        """
+        Command to join events together by a field.
+        """
         def __init__(self, by_field):
             self.by_field = by_field
 
@@ -182,6 +281,11 @@ class Pipeline:
             return {'type': 'join', 'by_field': self.by_field}
 
         def execute(self, events):
+            """
+            Produce a new event set with joined events.
+            :param events:
+            :return:
+            """
             temp_events = {}
 
             for event in events:
@@ -208,6 +312,13 @@ class Pipeline:
                 yield event
 
     class PrettyprintCommand(TransformingCommand):
+        """
+        Command to print events in a pretty fashion.
+        Format options are 'json' and 'table'.
+
+        Format 'json' transforms each event using newlines and indentation.
+        Format 'table' transforms the entire event set into a formatted table.
+        """
         def __init__(self, format_type):
             self.format_type = format_type
 
@@ -215,6 +326,11 @@ class Pipeline:
             return {'type': 'prettyprint', 'format': self.format_type}
 
         def execute(self, events):
+            """
+            Transform events into a pretty format.
+            :param events:
+            :return:
+            """
             if self.format_type == 'json':
                 for event in events:
                     yield json.dumps(event, indent=4)
@@ -222,7 +338,13 @@ class Pipeline:
                 for event in self.pretty_print_table(events):
                     yield event
 
-        def pretty_print_table(self, events):
+        @staticmethod
+        def pretty_print_table(events):
+            """
+            Transform the event set into a formatted table.
+            :param events:
+            :return:
+            """
             fields_dict = {}
 
             events_list = []
@@ -267,6 +389,9 @@ class Pipeline:
                 yield line
 
     class SearchTransformer(Transformer):
+        """
+        Used to transform the abstract syntax tree (AST) produced by Lark into a list of pipeline stages.
+        """
         start = list
 
         def search_cmd(self, items):
